@@ -58,14 +58,5 @@ A **Agenda Inteligente com IA** é um aplicativo que permite ao usuário adicion
 
 ---
 
-## Como Executar Localmente
-
-### Pré-requisitos:
-
-- **Node.js** (para frontend se for usar React.js)
-- **Flutter** (para app móvel)
-- **Python 3.x** (para o backend)
-- **Conta no Google Cloud** (para APIs de Speech-to-Text e Calendar)
-
 
 
