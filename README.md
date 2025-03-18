@@ -67,8 +67,5 @@ A **Agenda Inteligente com IA** é um aplicativo que permite ao usuário adicion
 - **Python 3.x** (para o backend)
 - **Conta no Google Cloud** (para APIs de Speech-to-Text e Calendar)
 
-### Passos para Executar:
 
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/seu-usuario/agenda-inteligente-com-ia.git
+
