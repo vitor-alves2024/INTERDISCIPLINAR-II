@@ -1,1 +1,126 @@
-*script*
+-- Tabela de usuários
+CREATE TABLE usuarios (
+    usuario_id INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    senha_hash VARCHAR(255) NOT NULL,
+    data_cadastro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ultimo_login DATETIME,
+    preferencias_json JSON
+);
+
+-- Tabela de áudios enviados
+CREATE TABLE audios (
+    audio_id INT PRIMARY KEY AUTO_INCREMENT,
+    usuario_id INT NOT NULL,
+    caminho_arquivo VARCHAR(255) NOT NULL,
+    duracao_segundos INT,
+    data_envio DATETIME DEFAULT CURRENT_TIMESTAMP,
+    formato_audio VARCHAR(10),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(usuario_id)
+);
+
+-- Tabela de transcrições
+CREATE TABLE transcricoes (
+    transcricao_id INT PRIMARY KEY AUTO_INCREMENT,
+    audio_id INT NOT NULL,
+    texto_transcrito TEXT NOT NULL,
+    confianca_media DECIMAL(5,2),
+    idioma VARCHAR(10),
+    data_processamento DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (audio_id) REFERENCES audios(audio_id)
+);
+
+-- Tabela de eventos/compromissos
+CREATE TABLE eventos (
+    evento_id INT PRIMARY KEY AUTO_INCREMENT,
+    usuario_id INT NOT NULL,
+    titulo VARCHAR(255) NOT NULL,
+    descricao TEXT,
+    data_inicio DATETIME NOT NULL,
+    data_fim DATETIME,
+    localizacao VARCHAR(255),
+    recorrencia_json JSON,
+    status ENUM('ativo', 'concluido', 'cancelado') DEFAULT 'ativo',
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    origem_audio_id INT,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(usuario_id),
+    FOREIGN KEY (origem_audio_id) REFERENCES audios(audio_id)
+);
+
+-- Tabela de participantes (para eventos que envolvem outras pessoas)
+CREATE TABLE participantes (
+    participante_id INT PRIMARY KEY AUTO_INCREMENT,
+    evento_id INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    telefone VARCHAR(20),
+    confirmacao ENUM('pendente', 'confirmado', 'recusado') DEFAULT 'pendente',
+    FOREIGN KEY (evento_id) REFERENCES eventos(evento_id)
+);
+
+-- Tabela de notificações
+CREATE TABLE notificacoes (
+    notificacao_id INT PRIMARY KEY AUTO_INCREMENT,
+    evento_id INT NOT NULL,
+    tipo ENUM('lembrete', 'alarme', 'confirmacao') NOT NULL,
+    data_envio_previsto DATETIME NOT NULL,
+    data_envio_real DATETIME,
+    metodo ENUM('push', 'email', 'sms') NOT NULL,
+    status ENUM('pendente', 'enviado', 'falha') DEFAULT 'pendente',
+    FOREIGN KEY (evento_id) REFERENCES eventos(evento_id)
+);
+
+-- Tabela de integrações com calendários externos
+CREATE TABLE integracoes_calendario (
+    integracao_id INT PRIMARY KEY AUTO_INCREMENT,
+    usuario_id INT NOT NULL,
+    provedor ENUM('google', 'apple', 'outlook') NOT NULL,
+    token_acesso TEXT NOT NULL,
+    token_atualizacao TEXT,
+    data_expiracao DATETIME,
+    calendario_externo_id VARCHAR(255),
+    sincronizar_automaticamente BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(usuario_id)
+);
+
+-- Tabela para logs de processamento de NLP
+CREATE TABLE nlp_logs (
+    log_id INT PRIMARY KEY AUTO_INCREMENT,
+    transcricao_id INT NOT NULL,
+    entidades_extraidas_json JSON NOT NULL,
+    intencao_detectada VARCHAR(50),
+    acao_realizada VARCHAR(100) NOT NULL,
+    data_processamento DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (transcricao_id) REFERENCES transcricoes(transcricao_id)
+);
+
+=========================Índices Recomendados (para melhor performance)============
+sql
+Copy
+-- Índices para consultas frequentes
+CREATE INDEX idx_eventos_usuario ON eventos(usuario_id);
+CREATE INDEX idx_eventos_data ON eventos(data_inicio);
+CREATE INDEX idx_notificacoes_envio ON notificacoes(data_envio_previsto, status);
+CREATE INDEX idx_audios_usuario ON audios(usuario_id);
+CREATE INDEX idx_transcricoes_audio ON transcricoes(audio_id);
+
+
+====================================Views Úteis=====================
+sql
+Copy
+-- View para eventos pendentes
+CREATE VIEW view_eventos_pendentes AS
+SELECT e.*, u.nome AS usuario_nome
+FROM eventos e
+JOIN usuarios u ON e.usuario_id = u.usuario_id
+WHERE e.status = 'ativo' AND e.data_inicio > NOW();
+
+-- View para notificações a enviar
+CREATE VIEW view_notificacoes_pendentes AS
+SELECT n.*, e.titulo, e.data_inicio, u.email, u.nome AS usuario_nome
+FROM notificacoes n
+JOIN eventos e ON n.evento_id = e.evento_id
+JOIN usuarios u ON e.usuario_id = u.usuario_id
+WHERE n.status = 'pendente' AND n.data_envio_previsto <= NOW();
+
