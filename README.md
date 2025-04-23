@@ -1,1 +1,0 @@
-# AgendaFast - Projeto Interdisciplinar II
