@@ -1,0 +1,215 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1:3306
+-- Tempo de geração: 23/04/2025 às 02:16
+-- Versão do servidor: 9.1.0
+-- Versão do PHP: 8.3.14
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Banco de dados: `agendafast`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `audios`
+--
+
+DROP TABLE IF EXISTS `audios`;
+CREATE TABLE IF NOT EXISTS `audios` (
+  `audio_id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `caminho_arquivo` varchar(255) NOT NULL,
+  `duracao_segundos` int DEFAULT NULL,
+  `data_envio` datetime DEFAULT CURRENT_TIMESTAMP,
+  `formato_audio` varchar(10) DEFAULT NULL,
+  PRIMARY KEY (`audio_id`),
+  KEY `usuario_id` (`usuario_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `eventos`
+--
+
+DROP TABLE IF EXISTS `eventos`;
+CREATE TABLE IF NOT EXISTS `eventos` (
+  `evento_id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `titulo` varchar(255) NOT NULL,
+  `descricao` text,
+  `data_inicio` datetime NOT NULL,
+  `data_fim` datetime DEFAULT NULL,
+  `localizacao` varchar(255) DEFAULT NULL,
+  `recorrencia_json` json DEFAULT NULL,
+  `status` enum('ativo','concluido','cancelado') DEFAULT 'ativo',
+  `data_criacao` datetime DEFAULT CURRENT_TIMESTAMP,
+  `origem_audio_id` int DEFAULT NULL,
+  PRIMARY KEY (`evento_id`),
+  KEY `usuario_id` (`usuario_id`),
+  KEY `origem_audio_id` (`origem_audio_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `integracoes_calendario`
+--
+
+DROP TABLE IF EXISTS `integracoes_calendario`;
+CREATE TABLE IF NOT EXISTS `integracoes_calendario` (
+  `integracao_id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `provedor` enum('google','apple','outlook') NOT NULL,
+  `token_acesso` text NOT NULL,
+  `token_atualizacao` text,
+  `data_expiracao` datetime DEFAULT NULL,
+  `calendario_externo_id` varchar(255) DEFAULT NULL,
+  `sincronizar_automaticamente` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`integracao_id`),
+  KEY `usuario_id` (`usuario_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `nlp_logs`
+--
+
+DROP TABLE IF EXISTS `nlp_logs`;
+CREATE TABLE IF NOT EXISTS `nlp_logs` (
+  `log_id` int NOT NULL AUTO_INCREMENT,
+  `transcricao_id` int NOT NULL,
+  `entidades_extraidas_json` json NOT NULL,
+  `intencao_detectada` varchar(50) DEFAULT NULL,
+  `acao_realizada` varchar(100) NOT NULL,
+  `data_processamento` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`log_id`),
+  KEY `transcricao_id` (`transcricao_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `notificacoes`
+--
+
+DROP TABLE IF EXISTS `notificacoes`;
+CREATE TABLE IF NOT EXISTS `notificacoes` (
+  `notificacao_id` int NOT NULL AUTO_INCREMENT,
+  `evento_id` int NOT NULL,
+  `tipo` enum('lembrete','alarme','confirmacao') NOT NULL,
+  `data_envio_previsto` datetime NOT NULL,
+  `data_envio_real` datetime DEFAULT NULL,
+  `metodo` enum('push','email','sms') NOT NULL,
+  `status` enum('pendente','enviado','falha') DEFAULT 'pendente',
+  PRIMARY KEY (`notificacao_id`),
+  KEY `evento_id` (`evento_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `participantes`
+--
+
+DROP TABLE IF EXISTS `participantes`;
+CREATE TABLE IF NOT EXISTS `participantes` (
+  `participante_id` int NOT NULL AUTO_INCREMENT,
+  `evento_id` int NOT NULL,
+  `nome` varchar(100) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `confirmacao` enum('pendente','confirmado','recusado') DEFAULT 'pendente',
+  PRIMARY KEY (`participante_id`),
+  KEY `evento_id` (`evento_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `recuperacao_senha`
+--
+
+DROP TABLE IF EXISTS `recuperacao_senha`;
+CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `email` varchar(100) NOT NULL,
+  `usuario_id` int NOT NULL,
+  `codigo` varchar(6) NOT NULL,
+  `expiracao` datetime NOT NULL,
+  `usado` tinyint(1) DEFAULT '0',
+  `data_criacao` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `usuario_id` (`usuario_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Despejando dados para a tabela `recuperacao_senha`
+--
+
+INSERT INTO `recuperacao_senha` (`id`, `email`, `usuario_id`, `codigo`, `expiracao`, `usado`, `data_criacao`) VALUES
+(1, 'vitormonteiroad@gmail.com', 0, '998161', '2025-04-23 02:30:52', 1, '2025-04-22 23:00:52');
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `transcricoes`
+--
+
+DROP TABLE IF EXISTS `transcricoes`;
+CREATE TABLE IF NOT EXISTS `transcricoes` (
+  `transcricao_id` int NOT NULL AUTO_INCREMENT,
+  `audio_id` int NOT NULL,
+  `texto_transcrito` text NOT NULL,
+  `confianca_media` decimal(5,2) DEFAULT NULL,
+  `idioma` varchar(10) DEFAULT NULL,
+  `data_processamento` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`transcricao_id`),
+  KEY `audio_id` (`audio_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `usuarios`
+--
+
+DROP TABLE IF EXISTS `usuarios`;
+CREATE TABLE IF NOT EXISTS `usuarios` (
+  `usuario_id` int NOT NULL AUTO_INCREMENT,
+  `nome` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `senha_hash` varchar(255) NOT NULL,
+  `data_cadastro` datetime DEFAULT CURRENT_TIMESTAMP,
+  `ultimo_login` datetime DEFAULT NULL,
+  `preferencias_json` json DEFAULT NULL,
+  PRIMARY KEY (`usuario_id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Despejando dados para a tabela `usuarios`
+--
+
+INSERT INTO `usuarios` (`usuario_id`, `nome`, `email`, `senha_hash`, `data_cadastro`, `ultimo_login`, `preferencias_json`) VALUES
+(1, 'vitor alves monteiro', 'vitormonteiroad@gmail.com', '$2y$10$fOCfHp.uRijEcXUuXVFxleiXw4GZrj6fxjOXx.0V8P8Pmu1O/lxq6', '2025-04-22 22:34:27', NULL, NULL),
+(2, 'Patricia Alves do Rego', 'patricia@gmail.com', '$2y$10$72VPsCdtVJu2Tx3KvA2An.y1jB24N8orYM7PFSiQE7LPAJnajeseG', '2025-04-22 22:49:03', NULL, NULL);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
